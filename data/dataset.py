@@ -12,13 +12,13 @@ def time_to_seconds(time_str):
 
 
 class ChessGamesDataset(Dataset):
-    def __init__(self, filenames, max_moves=100, ratings_mean=1650, ratings_std=433, clocks_mean=60, clocks_std=0.1):
+    def __init__(self, filenames, max_moves=100, min_rating=900, max_rating=2400, clock=60):
         self.filenames = filenames
         self.max_moves = max_moves
-        self.ratings_mean = ratings_mean
-        self.ratings_std = ratings_std
-        self.clocks_mean = clocks_mean
-        self.clocks_std = clocks_std
+        self.clock = clock
+        self.min_rating = min_rating
+        self.max_rating = max_rating
+        self.rating_range = max_rating - min_rating
 
     def __len__(self):
         return len(self.filenames)
@@ -27,7 +27,7 @@ class ChessGamesDataset(Dataset):
         with open(self.filenames[idx], 'rb') as f:
             game_info = pickle.load(f)
         clocks = [time_to_seconds(c) for c in game_info.get('Clocks', [])]
-        clocks = [(c - self.clocks_mean) / self.clocks_std for c in clocks]
+        clocks = [c / self.clock for c in clocks]
         clocks = torch.tensor(clocks, dtype=torch.float)[:self.max_moves]
         # Ablation to set clocks to 0
         # clocks = torch.zeros_like(clocks)
@@ -37,12 +37,12 @@ class ChessGamesDataset(Dataset):
         last_rating = None
         if "rating_after_last_game" in game_info:
             last_rating = game_info["rating_after_last_game"]
-            last_rating = (last_rating - self.ratings_mean) / self.ratings_std
+            last_rating = (last_rating - self.min_rating) / self.rating_range
             last_rating = torch.tensor(last_rating, dtype=torch.float)
         positions = torch.stack(game_info['Positions'])[:self.max_moves]
         white_elo, black_elo = float(game_info['WhiteElo']), float(game_info['BlackElo'])
-        targets = torch.tensor([white_elo, black_elo], dtype=torch.float)
-        targets = (targets - self.ratings_mean) / self.ratings_std
+        targets = torch.tensor([white_elo], dtype=torch.float)
+        targets = (targets - self.min_rating) / self.rating_range
 
         length = len(positions)
         initial_time, increment = map(int, game_info['Time'].split('+'))

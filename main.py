@@ -8,24 +8,29 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 
 from data.dataset import ChessGamesDataset, collate_fn
-from model.predictor import ChessEloPredictor, train_one_epoch, validate, test
+from model.predictor import ChessEloPredictor, train_one_epoch, validate, test, WeightedMSELoss
 from util import get_device
 
 def main():
-    data_dir = "data/processed_games"
-    experiment_name = "test_repository"
+    # data_dir = "../RatingNet/src/data/processed_games"
+    data_dir = "data/unpacked_games"
+    experiment_name = "new_architecture_only_white_weighted_loss"
     train = True
-    best_path = "models/2024-09_games_60+0/model_3.pth"
-    criterion = nn.L1Loss()
+    # best_path = "models/2024-09_games_60+0/model_3.pth"
+    # criterion = nn.L1Loss()
     # criterion = nn.MSELoss()
+    # Weighted loss
+    # For a game, the weight of the loss is greater the later in the game it is
+    criterion = WeightedMSELoss()
+
 
     params = {
         'train_batch_size': 32,
-        'val_batch_size': 8192,
+        'val_batch_size': 2048,
         'num_workers': 4,
         'learning_rate': 0.0001,
         'weight_decay': 1e-5,
-        'epochs': 5,
+        'epochs': 50,
         'optimizer': 'Adam',
         'patience': 5,
         'lr_factor': 0.5,

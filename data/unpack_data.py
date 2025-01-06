@@ -132,7 +132,7 @@ if __name__ == "__main__":
     argparser.add_argument("--file_path", type=str, default="games/2024-09_games_60+0.pgn")
     argparser.add_argument("--files_dir", type=str, default=None)
     argparser.add_argument("--max_games", type=int, default=0)
-    argparser.add_argument("--out_dir", type=str, default="processed_games/")
+    argparser.add_argument("--out_dir", type=str, default="unpacked_games/")
 
     args = argparser.parse_args()
 
