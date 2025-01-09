@@ -32,7 +32,7 @@ def game_to_pgn_string(game):
     return pgn_string
 
 
-def parse_game(game):
+def parse_game(game, high_memory=False):
     """Parses game object to extract evaluations, clocks and positions."""
     time_control = game.headers.get('TimeControl', '')
 
@@ -47,7 +47,8 @@ def parse_game(game):
         next_node = node.variation(0)
         move = next_node.move
         board.push(move)
-        positions.append(board_to_array(board))
+        if high_memory:
+            positions.append(board_to_array(board))
         moves.append(move.uci())
         comment = next_node.comment
 
@@ -65,36 +66,43 @@ def parse_game(game):
         # Evals stop at move 150
         # evaluations = evaluations[:150]
         clocks = clocks[:150]
-        positions = positions[:150]
+        if high_memory:
+            positions = positions[:150]
 
-    if len(clocks) != len(positions):
+        moves = moves[:150]
+
+    if len(clocks) != len(moves):
         print(len(clocks), len(positions))
         print(game_to_pgn_string(game))
         return -1
-    return {
+    game_info = {
         "WhiteElo": game.headers.get("WhiteElo", None),
         "BlackElo": game.headers.get("BlackElo", None),
         "Result": game.headers.get("Result", None),
         "Clocks": clocks,
-        "Positions": positions,
         "Time": time_control,
         "Moves": moves
     }
 
+    if high_memory:
+        game_info["Positions"] = positions
 
-def process_pgn_file(filename):
+    return game_info
+
+
+def process_pgn_file(filename, high_memory=False):
     """Processes each game in a PGN file."""
     with open(filename) as pgn:
         while True:
             game = chess.pgn.read_game(pgn)
             if game is None:
                 break
-            game_info = parse_game(game)
+            game_info = parse_game(game, high_memory)
             if game_info:
                 yield game_info
 
 
-def main(file_path: str, files_dir: str, max_games: int, out_dir: str):
+def main(file_path: str, files_dir: str, max_games: int, out_dir: str, high_memory: bool = False):
     file_path = file_path
     max_games = max_games
     out_dir = out_dir
@@ -108,7 +116,7 @@ def main(file_path: str, files_dir: str, max_games: int, out_dir: str):
     files = [file_path] if not files_dir else [f"{files_dir}{f}" for f in os.listdir(files_dir)]
 
     for file in files:
-        for game_info in process_pgn_file(file):
+        for game_info in process_pgn_file(file, high_memory):
             if game_count % 1000 == 0:
                 print(game_count)
             if game_info == -1:
@@ -133,7 +141,8 @@ if __name__ == "__main__":
     argparser.add_argument("--files_dir", type=str, default=None)
     argparser.add_argument("--max_games", type=int, default=0)
     argparser.add_argument("--out_dir", type=str, default="unpacked_games/")
+    argparser.add_argument("--high_memory", action="store_true")
 
     args = argparser.parse_args()
 
-    main(args.file_path, args.files_dir, args.max_games, args.out_dir)
+    main(args.file_path, args.files_dir, args.max_games, args.out_dir, args.high_memory)
