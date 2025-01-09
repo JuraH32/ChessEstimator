@@ -14,7 +14,7 @@ from data.dataset import ChessGamesDataset, collate_fn
 from model.predictor import ChessEloPredictor, train_one_epoch, validate, test, WeightedMSELoss
 from util import get_device
 
-def main(data_dir, experiment_name, train, criterion, epochs):
+def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, num_workers):
     i = 1
     while os.path.exists(f"runs/{experiment_name}_{i}"):
         i += 1
@@ -33,8 +33,8 @@ def main(data_dir, experiment_name, train, criterion, epochs):
 
     params = {
         'train_batch_size': 32,
-        'val_batch_size': 1024,
-        'num_workers': 4,
+        'val_batch_size': val_batch_size,
+        'num_workers': num_workers,
         'learning_rate': 0.0001,
         'weight_decay': 1e-5,
         'epochs': epochs,
@@ -135,7 +135,9 @@ if __name__ == "__main__":
     argparser.add_argument("--train", type=bool, default=True)
     argparser.add_argument("--criterion", type=str, default="MSELoss")
     argparser.add_argument("--epochs", type=int, default=50)
+    argparser.add_argument("--val_batch_size", type=int, default=1024)
+    argparser.add_argument("--num_workers", type=int, default=4)
 
     args = argparser.parse_args()
 
-    main(args.data_dir, args.experiment_name, args.train, args.criterion, args.epochs)
+    main(args.data_dir, args.experiment_name, args.train, args.criterion, args.epochs, args.val_batch_size, args.num_workers)
