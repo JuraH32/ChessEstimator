@@ -1,8 +1,11 @@
 import pickle
 
+import chess
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
+
+from util import board_to_array
 
 
 def time_to_seconds(time_str):
@@ -39,7 +42,18 @@ class ChessGamesDataset(Dataset):
             last_rating = game_info["rating_after_last_game"]
             last_rating = (last_rating - self.min_rating) / self.rating_range
             last_rating = torch.tensor(last_rating, dtype=torch.float)
-        positions = torch.stack(game_info['Positions'])[:self.max_moves]
+
+        if "Positions" not in game_info:
+            moves = game_info.get('Moves', [])
+            board = chess.Board()
+            game_positions = []
+            for move in moves:
+                board.push(chess.Move.from_uci(move))
+                game_positions.append(board_to_array(board))
+        else:
+            game_positions = game_info['Positions']
+
+        positions = torch.stack(game_positions)[:self.max_moves]
         white_elo, black_elo = float(game_info['WhiteElo']), float(game_info['BlackElo'])
         targets = torch.tensor([white_elo], dtype=torch.float)
         targets = (targets - self.min_rating) / self.rating_range

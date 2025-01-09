@@ -8,21 +8,7 @@ import torch
 import chess
 import chess.pgn
 
-
-def board_to_array(board):
-    """Converts a chess board into a 12-layer 8x8 tensor representing the piece positions."""
-    # Board('rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR b KQkq - 0 1')
-    board_array = torch.zeros((12, 8, 8), dtype=torch.float32)
-    piece_map = board.piece_map()
-    # {63: Piece.from_symbol('r'), 62: Piece.from_symbol('n')
-    for square, piece in piece_map.items():
-        # 1 pawn, 2 knight, 3 bishop, 4 rook, 5 queen, 6 king
-        # Piece color is true if white
-        # White pieces 0-5, black 6-11
-        index = piece.piece_type - 1 + (6 if piece.color == chess.BLACK else 0)
-        row, col = divmod(square, 8)
-        board_array[index, 7 - row, col] = 1
-    return board_array
+from util import board_to_array
 
 
 def game_to_pgn_string(game):
@@ -35,7 +21,6 @@ def game_to_pgn_string(game):
 def parse_game(game, high_memory=False):
     """Parses game object to extract evaluations, clocks and positions."""
     time_control = game.headers.get('TimeControl', '')
-
     board = game.board()
     moves = []
     # evaluations = []
@@ -46,8 +31,8 @@ def parse_game(game, high_memory=False):
     while node.variations:
         next_node = node.variation(0)
         move = next_node.move
-        board.push(move)
         if high_memory:
+            board.push(move)
             positions.append(board_to_array(board))
         moves.append(move.uci())
         comment = next_node.comment
@@ -72,7 +57,7 @@ def parse_game(game, high_memory=False):
         moves = moves[:150]
 
     if len(clocks) != len(moves):
-        print(len(clocks), len(positions))
+        print(len(clocks), len(moves))
         print(game_to_pgn_string(game))
         return -1
     game_info = {
@@ -105,7 +90,7 @@ def process_pgn_file(filename, high_memory=False):
 def main(file_path: str, files_dir: str, max_games: int, out_dir: str, high_memory: bool = False):
     file_path = file_path
     max_games = max_games
-    out_dir = out_dir
+    out_dir = out_dir + "/" if not out_dir.endswith("/") else out_dir
     game_count = 0
     start = time.time()
 

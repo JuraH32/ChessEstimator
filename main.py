@@ -33,7 +33,7 @@ def main(data_dir, experiment_name, train, criterion, epochs):
 
     params = {
         'train_batch_size': 32,
-        'val_batch_size': 2048,
+        'val_batch_size': 1024,
         'num_workers': 4,
         'learning_rate': 0.0001,
         'weight_decay': 1e-5,
@@ -49,8 +49,7 @@ def main(data_dir, experiment_name, train, criterion, epochs):
         "fc1_h": 32
     }
 
-    if __name__ == '__main__':
-        wandb.init(project='chess-elo-prediction', name=experiment_name, config=params)
+    wandb.init(project='chess-elo-prediction', name=experiment_name, config=params)
 
     all_files = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.pkl')]
     model_dir = os.path.join('models', experiment_name)
