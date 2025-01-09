@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -6,22 +8,27 @@ from sklearn.model_selection import train_test_split
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 import time
+import wandb
 
 from data.dataset import ChessGamesDataset, collate_fn
 from model.predictor import ChessEloPredictor, train_one_epoch, validate, test, WeightedMSELoss
 from util import get_device
 
-def main():
-    # data_dir = "../RatingNet/src/data/processed_games"
-    data_dir = "data/unpacked_games"
-    experiment_name = "new_architecture_only_white_weighted_loss"
-    train = True
+def main(data_dir, experiment_name, train, criterion, epochs):
+    i = 1
+    while os.path.exists(f"runs/{experiment_name}_{i}"):
+        i += 1
     # best_path = "models/2024-09_games_60+0/model_3.pth"
-    # criterion = nn.L1Loss()
-    # criterion = nn.MSELoss()
     # Weighted loss
     # For a game, the weight of the loss is greater the later in the game it is
-    criterion = WeightedMSELoss()
+    # criterion = WeightedMSELoss()
+
+    if criterion == "MSELoss":
+        criterion = nn.MSELoss()
+    elif criterion == "L1Loss":
+        criterion = nn.L1Loss()
+    elif criterion == "WeightedMSELoss":
+        criterion = WeightedMSELoss()
 
 
     params = {
@@ -30,7 +37,7 @@ def main():
         'num_workers': 4,
         'learning_rate': 0.0001,
         'weight_decay': 1e-5,
-        'epochs': 50,
+        'epochs': epochs,
         'optimizer': 'Adam',
         'patience': 5,
         'lr_factor': 0.5,
@@ -41,6 +48,9 @@ def main():
         "lstm_h": 64,
         "fc1_h": 32
     }
+
+    if __name__ == '__main__':
+        wandb.init(project='chess-elo-prediction', name=experiment_name, config=params)
 
     all_files = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.pkl')]
     model_dir = os.path.join('models', experiment_name)
@@ -89,6 +99,9 @@ def main():
             writer.add_scalar('Loss/Validation', val_loss, epoch)
             epoch_duration = (time.time() - epoch_start) / 60
             writer.add_scalar('Timing/Epoch Duration', epoch_duration, epoch)
+
+            wandb.log({"train_loss": train_loss, "val_loss": val_loss, "epoch_duration": epoch_duration})
+
             scheduler.step(val_loss)
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -116,4 +129,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    argparser = argparse.ArgumentParser()
+
+    argparser.add_argument("--data_dir", type=str, default="data/unpacked_games")
+    argparser.add_argument("--experiment_name", type=str, default="test")
+    argparser.add_argument("--train", type=bool, default=True)
+    argparser.add_argument("--criterion", type=str, default="MSELoss")
+    argparser.add_argument("--epochs", type=int, default=50)
+
+    args = argparser.parse_args()
+
+    main(args.data_dir, args.experiment_name, args.train, args.criterion, args.epochs)
