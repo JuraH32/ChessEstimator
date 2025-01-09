@@ -109,6 +109,10 @@ def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, nu
                 torch.save({'model_state_dict': model.state_dict(),
                             'params': params},
                            best_path)
+
+                # Save best model to wandb
+                wandb.save(best_path)
+
                 print("Saved best model")
         end = time.time()
         print("Training duration: ", (end - start) / 60)
