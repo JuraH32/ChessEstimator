@@ -12,7 +12,7 @@ import wandb
 
 from data.dataset import ChessGamesDataset, collate_fn
 from model.predictor import ChessEloPredictor, train_one_epoch, validate, test, WeightedMSELoss
-from model.util import get_device
+from util import get_device
 
 def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, num_workers, time_control):
     i = 1

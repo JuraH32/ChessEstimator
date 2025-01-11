@@ -5,7 +5,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 import chess
 
-from model.util import board_to_array
+from util import board_to_array
 
 
 def process_file(file):

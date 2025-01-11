@@ -7,7 +7,7 @@ import re
 import chess
 import chess.pgn
 
-from model.util import board_to_array
+from util import board_to_array
 
 
 def game_to_pgn_string(game):
