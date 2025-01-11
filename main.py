@@ -12,9 +12,9 @@ import wandb
 
 from data.dataset import ChessGamesDataset, collate_fn
 from model.predictor import ChessEloPredictor, train_one_epoch, validate, test, WeightedMSELoss
-from util import get_device
+from model.util import get_device
 
-def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, num_workers):
+def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, num_workers, time_control):
     i = 1
     while os.path.exists(f"runs/{experiment_name}_{i}"):
         i += 1
@@ -64,9 +64,9 @@ def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, nu
     train_val_files, test_files = train_test_split(all_files, test_size=0.1, random_state=42)
     train_files, val_files = train_test_split(train_val_files, test_size=0.2, random_state=42)
 
-    train_dataset = ChessGamesDataset(train_files)
-    val_dataset = ChessGamesDataset(val_files)
-    test_dataset = ChessGamesDataset(test_files)
+    train_dataset = ChessGamesDataset(train_files, clock=time_control)
+    val_dataset = ChessGamesDataset(val_files, clock=time_control)
+    test_dataset = ChessGamesDataset(test_files, clock=time_control)
 
     train_loader = DataLoader(train_dataset, batch_size=params["train_batch_size"], shuffle=True, collate_fn=collate_fn,
                               num_workers=params['num_workers'])
@@ -141,7 +141,8 @@ if __name__ == "__main__":
     argparser.add_argument("--epochs", type=int, default=50)
     argparser.add_argument("--val_batch_size", type=int, default=1024)
     argparser.add_argument("--num_workers", type=int, default=4)
+    argparser.add_argument("--time_control", type=int, default=60)
 
     args = argparser.parse_args()
 
-    main(args.data_dir, args.experiment_name, args.train, args.criterion, args.epochs, args.val_batch_size, args.num_workers)
+    main(args.data_dir, args.experiment_name, args.train, args.criterion, args.epochs, args.val_batch_size, args.num_workers, args.time_control)

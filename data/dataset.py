@@ -5,7 +5,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
-from util import board_to_array
+from model.util import board_to_array
 
 
 def time_to_seconds(time_str):

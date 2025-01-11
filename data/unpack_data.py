@@ -3,12 +3,11 @@ import os
 import time
 import pickle
 import re
-import torch
 
 import chess
 import chess.pgn
 
-from util import board_to_array
+from model.util import board_to_array
 
 
 def game_to_pgn_string(game):
