@@ -6,8 +6,9 @@ import torch.nn.functional as F
 
 class ChessEloPredictor(nn.Module):
     # RatingNet
-    def __init__(self, conv_filters=16, lstm_layers=2, dropout_rate=0.5, lstm_h=64, fc1_h=16, bidirectional=False):
+    def __init__(self, conv_filters=32, lstm_layers=3, dropout_rate=0.5, lstm_h=64, fc1_h=32, bidirectional=True, training=True):
         super(ChessEloPredictor, self).__init__()
+        self.training = training
         self.conv1 = nn.Conv2d(12, conv_filters, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(conv_filters)
         self.conv2 = nn.Conv2d(conv_filters, conv_filters * 2, kernel_size=3, padding=1)
@@ -27,7 +28,7 @@ class ChessEloPredictor(nn.Module):
         self.fc2 = nn.Linear(fc1_h, 1)
         self.dropout2 = nn.Dropout(dropout_rate)
 
-    def forward(self, positions, clocks, lengths):
+    def forward(self, positions, clocks, lengths, hidden_state=None):
         # CNN-LSTM model
         batch_size = positions.size(0)
         seq_len = positions.size(1)
@@ -43,10 +44,15 @@ class ChessEloPredictor(nn.Module):
         clocks = clocks.unsqueeze(2)  # [batch_size, seq_len, 1]
         lstm_input = torch.cat((x, clocks), dim=2)  # [batch_size, seq_len, conv_filters * 4 + 1]
 
-        # Pack padded sequence for LSTM
-        packed_input = pack_padded_sequence(lstm_input, lengths, batch_first=True, enforce_sorted=False)
-        packed_output, _ = self.lstm(packed_input)
-        lstm_output, _ = pad_packed_sequence(packed_output, batch_first=True)
+        new_states = None
+
+        if self.training:
+            # Pack padded sequence for LSTM
+            packed_input = pack_padded_sequence(lstm_input, lengths, batch_first=True, enforce_sorted=False)
+            packed_output, _ = self.lstm(packed_input)
+            lstm_output, _ = pad_packed_sequence(packed_output, batch_first=True)
+        else:
+            lstm_output, new_states = self.lstm(lstm_input, hidden_state)
 
         # Fully connected layers
         lstm_output = F.leaky_relu(self.fc1(lstm_output))
@@ -60,7 +66,7 @@ class ChessEloPredictor(nn.Module):
         idx = torch.arange(batch_size)
         final_predictions = rating_estimates[idx, lengths - 1, :]  # [batch_size, 1]
 
-        return rating_estimates, final_predictions
+        return rating_estimates, final_predictions, new_states
 
 
 # Class for weighted loss
@@ -123,7 +129,7 @@ def train_one_epoch(model, train_loader, device, criterion, optimizer, ratings_m
         targets = batch['targets'].to(device)
         lengths = batch['lengths']
         optimizer.zero_grad()
-        all, outputs = model(positions, clocks, lengths)
+        all, outputs, _ = model(positions, clocks, lengths)
         if criterion.__class__.__name__ == "WeightedMSELoss":
             loss = criterion(all * rating_range + ratings_min, targets * rating_range + ratings_min, lengths)
         else:
@@ -145,7 +151,7 @@ def validate(model, val_loader, device, criterion, ratings_min=900, ratings_max=
             clocks = batch['clocks'].to(device)
             targets = batch['targets'].to(device)
             lengths = batch['lengths']
-            all, outputs = model(positions, clocks, lengths)
+            all, outputs, _ = model(positions, clocks, lengths)
             loss = criterion(outputs * ratings_range + ratings_min, targets * ratings_range + ratings_min)
             total_val_loss += loss.item()
     return total_val_loss / len(val_loader)
@@ -206,7 +212,7 @@ def test(model, test_loader, device, criterion, ratings_min=900, ratings_max=240
             time_controls = batch['time_controls']
             game_results = batch['results']  # Assuming results are part of the batch
 
-            all, outputs = model(positions, clocks, lengths)
+            all, outputs, _ = model(positions, clocks, lengths)
             # Test setting outputs to mean rating
             # outputs = torch.zeros_like(outputs)
             loss = criterion(outputs * ratings_range + ratings_min, targets * ratings_range + ratings_min)

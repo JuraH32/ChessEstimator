@@ -49,7 +49,7 @@ def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, nu
         "fc1_h": 32
     }
 
-    wandb.init(project='chess-elo-prediction', name=experiment_name, config=params)
+    # wandb.init(project='chess-elo-prediction', name=experiment_name, config=params)
 
     all_files = [os.path.join(data_dir, f) for f in os.listdir(data_dir) if f.endswith('.pkl')]
     model_dir = os.path.join('models', experiment_name)
@@ -99,7 +99,7 @@ def main(data_dir, experiment_name, train, criterion, epochs, val_batch_size, nu
             epoch_duration = (time.time() - epoch_start) / 60
             writer.add_scalar('Timing/Epoch Duration', epoch_duration, epoch)
 
-            wandb.log({"train_loss": train_loss, "val_loss": val_loss, "epoch_duration": epoch_duration})
+            # wandb.log({"train_loss": train_loss, "val_loss": val_loss, "epoch_duration": epoch_duration})
 
             scheduler.step(val_loss)
             if val_loss < best_val_loss:
