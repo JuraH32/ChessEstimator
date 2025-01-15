@@ -10,8 +10,8 @@ from util import get_device
 increment_rating_ranges = {
     "60+0": (900, 2400),
     "180+0": (1000, 2100),
-    "300+0": (1100, 2000),
-    "600+0": (1200, 1900),
+    "300+0": (1000, 2100),
+    "180+2": (1000, 2100),
 }
 
 def parse_clock(timeIncrement):
