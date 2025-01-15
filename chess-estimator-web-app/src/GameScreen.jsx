@@ -11,7 +11,6 @@ const GameScreen = () => {
     const [connected, setConnected] = useState(false);
     const [gameOver, setGameOver] = useState(false);
 
-    const [blackTime, setBlackTime] = useState([time, increment]); // Convert to seconds
     const [whiteTime, setWhiteTime] = useState([time, increment]);
     const [position, setPosition] = useState('start');
     const [isWhiteTurn, setIsWhiteTurn] = useState(true);
@@ -21,7 +20,7 @@ const GameScreen = () => {
 
     useEffect(() => {
         console.log('Connecting to server...');
-        const socket = new WebSocket('/api/ws/play');
+        const socket = new WebSocket('ws://0.0.0.0:8000/ws/play');
         setWs(socket);
 
         socket.onopen = () => {
@@ -58,15 +57,9 @@ const GameScreen = () => {
         console.log('White turn:', isWhiteTurn);
         if (isWhiteTurn) {
             setWhiteTime((prevWhiteTime) => [prevWhiteTime[0], increment]);
-        } else {
-            setBlackTime((prevBlackTime) => [prevBlackTime[0], increment]);
         }
-        setIsWhiteTurn((prevIsWhiteTurn) => !prevIsWhiteTurn);
-    }
 
-    const onDragStart = (source, piece, position, orientation) => {
-        return !((isWhiteTurn && piece.search(/^b/) !== -1) ||
-            (!isWhiteTurn && piece.search(/^w/) !== -1));
+        setIsWhiteTurn((prevIsWhiteTurn) => !prevIsWhiteTurn);
     }
 
     useEffect(() => {
@@ -75,7 +68,7 @@ const GameScreen = () => {
             const moves = chess.history();
             const lastMove = moves[moves.length - 1];
             console.log('Sending move:', lastMove);
-            ws.send(JSON.stringify({move: lastMove, player_clocks: [whiteTime, blackTime]}));
+            ws.send(JSON.stringify({move: lastMove, player_clocks: whiteTime}));
         }
     }, [isWhiteTurn]);
 
@@ -84,8 +77,6 @@ const GameScreen = () => {
         const timer = setInterval(() => {
             if (isWhiteTurn) {
                 setWhiteTime((prevWhiteTime) => incrementTime(prevWhiteTime));
-            } else {
-                setBlackTime((prevBlackTime) => incrementTime(prevBlackTime));
             }
         }, 1000);
 
@@ -96,13 +87,10 @@ const GameScreen = () => {
         if (whiteTime[0] === 0 && whiteTime[1] === 0) {
             setGameOver(true);
         }
-        if (blackTime[0] === 0 && blackTime[1] === 0) {
-            setGameOver(true);
-        }
         if (chess.moves().length === 0) {
             setGameOver(true);
         }
-    }, [position, whiteTime, blackTime]);
+    }, [position, whiteTime]);
 
     // Handle piece movement
     const onDrop = (sourceSquare, targetSquare, piece) => {
@@ -136,7 +124,7 @@ const GameScreen = () => {
             {gameOver ? <h1>Estimated ELO: {Math.round(estimate)}</h1> : <>
                 <h3>Estimated ELO: {Math.round(estimate)}</h3>
                 <div>
-                    <h3>Black Time: {formatTime(blackTime)}</h3>
+                    <h3>Time left: {formatTime(whiteTime)}</h3>
                 </div>
                 {connected ?
                     <Chessboard
@@ -149,7 +137,6 @@ const GameScreen = () => {
 
                     /> : <h2>Connecting to server...</h2>}
                 <div>
-                    <h3>White Time: {formatTime(whiteTime)}</h3>
                 </div>
             </>}
         </div>

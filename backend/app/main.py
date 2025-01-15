@@ -34,12 +34,10 @@ async def websocket_endpoint(websocket: WebSocket):
         rating_model = RatingModel(clock)
         chess_agent = ChessAgentMaiaMultiple(clock)
 
-        rating_estimate = 1650
-
         while True:
             data = await websocket.receive_json()
             move = data.get("move")
-            white_clock, black_clock = data.get("player_clocks")
+            white_clock = data.get("player_clocks")
 
             try:
                 move_obj = chess_engine.board.parse_san(move)# Parse move in SAN format
