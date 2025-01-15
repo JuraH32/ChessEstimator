@@ -21,7 +21,7 @@ const GameScreen = () => {
 
     useEffect(() => {
         console.log('Connecting to server...');
-        const socket = new WebSocket('ws://127.0.0.1:8000/ws/play');
+        const socket = new WebSocket('/api/ws/play');
         setWs(socket);
 
         socket.onopen = () => {
