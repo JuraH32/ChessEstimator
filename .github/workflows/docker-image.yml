@@ -33,5 +33,5 @@ jobs:
       run: docker push jura32/chess-estimator:${{ env.IMAGE_TAG }}
 
     - name: Output the Image Tag
-      run: echo "Image built and pushed with tag: ${{ env.IMAGE_TAG }}"
+      run: echo "Image built and pushed with tag $IMAGE_TAG"
       
