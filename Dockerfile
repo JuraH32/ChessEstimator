@@ -9,9 +9,9 @@ RUN npm run build
 # Step 2: Prepare the Python backend
 FROM python:3.8-slim AS backend
 WORKDIR /app
-COPY ChessEstimator/requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY ChessEstimator .
+COPY backend .
 
 # Final image with both frontend and backend
 FROM nginx:stable AS final
@@ -46,7 +46,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Clone lc0
 RUN git clone -b v0.31.2 --recurse-submodules https://github.com/LeelaChessZero/lc0.git /app/lc0
-RUN sed -i "s/march=native/march=x86-64/g" /app/lc0/meson.build && /app/lc0/build.sh -Dneon=false
+RUN sed -i "s/march=native/march=native/g" /app/lc0/meson.build && /app/lc0/build.sh -Dneon=false
 
 ## Copy the lc0 binary to app/maia
 RUN cp /app/lc0/build/release/lc0 /app/maia
