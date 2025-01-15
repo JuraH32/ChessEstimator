@@ -18,9 +18,20 @@ jobs:
       with:
        username: ${{ secrets.DOCKERHUB_USERNAME }}
        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - uses: actions/checkout@v4
+       
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set Image Tag
+      id: vars
+      run: echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+      
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag jura32/chess-estimator:latest
+      run: docker build . --file Dockerfile --tag jura32/chess-estimator:${{ env.IMAGE_TAG }}
+
     - name: Push the Docker image
-      run: docker push jura32/chess-estimator:latest
+      run: docker push jura32/chess-estimator:${{ env.IMAGE_TAG }}
+
+    - name: Output the Image Tag
+      run: echo "Image built and pushed with tag: ${{ env.IMAGE_TAG }}"
       
